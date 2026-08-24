@@ -2,18 +2,23 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Інтерактивна Карта України (Dark Mode)</title>
 
     <!-- Стилі Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
+            overflow: hidden;
         }
 
         #map {
@@ -28,71 +33,146 @@
             border: 1px solid #334155;
         }
 
-        #control-panel {
+        /* --- КНОПКА ПЕРЕМИКАННЯ ПАНЕЛЕЙ НА МОБІЛЬНИХ --- */
+        #mobile-toggle-btn {
+            display: none;
             position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            background: rgba(30, 41, 59, 0.9);
+            top: 90px;
+            left: 12px;
+            z-index: 1001;
+            background: #1e293b;
+            color: #00f0ff;
             border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #f8fafc;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 260px;
-        }
-
-        #launch-btn {
-            background: #e74c3c;
-            color: #ffffff;
-            border: none;
             padding: 8px 12px;
+            border-radius: 6px;
             font-weight: bold;
-            border-radius: 4px;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
-        #launch-btn:hover {
-            background: #c0392b;
-        }
-
-        .slider-container {
+        /* --- БІЧНА ШТОРКА (SIDEBAR) --- */
+        #sidebar {
+            position: absolute;
+            top: 90px; /* Опущено під кнопки зуму Leaflet */
+            left: 15px;
+            bottom: 15px;
+            width: 320px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #f8fafc;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            font-size: 13px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            transition: transform 0.3s ease, width 0.3s ease;
         }
 
-        #flight-slider {
-            width: 100%;
+        #sidebar.collapsed {
+            transform: translateX(-340px);
+        }
+
+        .sidebar-header {
+            padding: 12px 15px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #00f0ff;
+        }
+
+        .clock-container {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #38bdf8;
+            background: #0f172a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+        }
+
+        #toggle-sidebar-btn {
+            position: absolute;
+            right: -35px;
+            top: 15px;
+            width: 35px;
+            height: 40px;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #334155;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            color: #00f0ff;
             cursor: pointer;
-        }
-
-        .missile-icon {
-            width: 36px;
-            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform-origin: center center;
+            font-size: 16px;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.3);
         }
 
-        .missile-icon svg {
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.7));
+        .targets-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        /* --- СТИЛЬ ДЛЯ ПІДСВІЧУВАННЯ КОРДОНУ УКРАЇНИ --- */
+        .target-card {
+            background: rgba(30, 41, 59, 0.6);
+            border-left: 4px solid #ef4444;
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .target-card:hover {
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .target-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .target-type {
+            font-weight: bold;
+            color: #f8fafc;
+            text-transform: uppercase;
+        }
+
+        .target-meta {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .target-time {
+            font-family: monospace;
+            color: #eab308;
+            font-weight: bold;
+        }
+
+        /* --- СТИЛІ ІКОНОК ТА АНІМАЦІЙ --- */
         .ukraine-border-glow {
             filter: drop-shadow(0px 0px 6px #00f0ff) drop-shadow(0px 0px 12px #0284c7);
         }
 
-        /* --- СТИЛІ ДЛЯ БЛИМАЮЧОЇ ТОЧКИ БАЛІСТИКИ --- */
         .custom-ballistic-marker {
             background: transparent !important;
             border: none !important;
@@ -148,26 +228,45 @@
             100% { transform: scale(2.2); opacity: 0; }
         }
 
-        /* --- СТИЛІ ДЛЯ ІКОНОК NEPTUN В РЕАЛЬНОМУ ЧАСІ --- */
         .neptun-target-icon {
             background: transparent !important;
             border: none !important;
         }
+
         .neptun-target-wrapper {
             width: 32px;
             height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s ease-out;
+            transition: transform 0.1s linear;
         }
+
         .neptun-target-wrapper svg {
             width: 100%;
             height: 100%;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
         }
 
-        /* --- ОКОРЕМИ АНІМАЦІЇ ДЛЯ РІЗНИХ ТИПІВ БПЛА --- */
+        /* Анімація КАБ / ФАБ */
+        .anim-kab {
+            animation: kab-glide 1.5s infinite alternate ease-in-out;
+        }
+        @keyframes kab-glide {
+            0% { transform: scale(0.95) translateY(-1px); filter: drop-shadow(0 0 2px #f97316); }
+            100% { transform: scale(1.08) translateY(2px); filter: drop-shadow(0 0 8px #ea580c); }
+        }
+
+        /* Анімація Бандєроль / Молнія */
+        .anim-banderol {
+            animation: banderol-fly 0.8s infinite alternate ease-in-out;
+        }
+        @keyframes banderol-fly {
+            0% { transform: rotate(-3deg) scale(0.96); filter: drop-shadow(0 0 3px #10b981); }
+            100% { transform: rotate(3deg) scale(1.04); filter: drop-shadow(0 0 8px #34d399); }
+        }
+
+        /* Анімація Шахед */
         .anim-shahed {
             animation: shahed-pulse 1.2s infinite ease-in-out alternate;
         }
@@ -176,6 +275,7 @@
             100% { transform: scale(1.15); filter: drop-shadow(0 0 8px #ef4444); }
         }
 
+        /* Анімація Розвідника */
         .anim-recon {
             animation: recon-spin 4s linear infinite;
         }
@@ -184,23 +284,55 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Анімація FPV */
         .anim-fpv {
-            animation: fpv-jitter 0.2s infinite alternate;
+            animation: fpv-jitter 0.15s infinite alternate;
         }
         @keyframes fpv-jitter {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(-1px, 1px) scale(1.05); }
-            100% { transform: translate(1px, -1px) scale(0.95); }
+            0% { transform: translate(0, 0) scale(1); filter: drop-shadow(0 0 2px #d946ef); }
+            50% { transform: translate(-1.5px, 1.5px) scale(1.05); filter: drop-shadow(0 0 6px #a855f7); }
+            100% { transform: translate(1.5px, -1.5px) scale(0.95); filter: drop-shadow(0 0 4px #ec4899); }
+        }
+
+        /* --- АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ ПРИСТРОЇВ --- */
+        @media (max-width: 768px) {
+            #mobile-toggle-btn {
+                display: block;
+            }
+
+            #sidebar {
+                top: 140px; /* Нижче кнопок управління Leaflet на мобільних */
+                left: 10px;
+                width: calc(100vw - 20px);
+                max-width: 320px;
+                bottom: 20px;
+            }
+
+            #sidebar.collapsed {
+                transform: translateX(-120vw);
+            }
+
+            #toggle-sidebar-btn {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div id="control-panel">
-        <button id="launch-btn">🚀 Авто-Пуск Х-101 (Ту-95МС)</button>
-        <div class="slider-container">
-            <label for="flight-slider">Прогрес польоту:</label>
-            <input type="range" id="flight-slider" min="0" max="100" value="0" disabled>
+    <button id="mobile-toggle-btn">📋 Меню / Цілі</button>
+
+    <!-- Бічна шторка (Список цілей + Годинник) -->
+    <div id="sidebar">
+        <button id="toggle-sidebar-btn">◀</button>
+        <div class="sidebar-header">
+            <span class="sidebar-title">📡 Повітряні Цілі</span>
+            <div class="clock-container" id="live-clock">00:00:00</div>
+        </div>
+        <div class="targets-list" id="targets-list-container">
+            <div style="color: #64748b; text-align: center; margin-top: 20px; font-size: 13px;">
+                Очікування даних про цілі...
+            </div>
         </div>
     </div>
 
@@ -213,17 +345,70 @@
     <script src="https://neptun.in.ua/sdk/neptun.js"></script>
 
     <script>
+        // --- ГОДИННИК РЕАЛЬНОГО ЧАСУ ---
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('live-clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- УПРАВЛІННЯ БІЧНОЮ ШТОРКОЮ В ПК/МОБІЛЬНОМУ РЕЖИМІ ---
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        const mobileToggleBtn = document.getElementById('mobile-toggle-btn');
+
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            toggleSidebarBtn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        });
+
+        mobileToggleBtn.addEventListener('click', () => {
+            if (sidebar.classList.contains('collapsed')) {
+                sidebar.classList.remove('collapsed');
+            } else {
+                sidebar.classList.add('collapsed');
+            }
+        });
+
+        // Автоматичне адаптивне підлаштування під розміри екрану
+        function handleResizeAdaptation() {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                if (!sidebar.dataset.userToggled) {
+                    sidebar.classList.add('collapsed');
+                }
+            } else {
+                sidebar.classList.remove('collapsed');
+                toggleSidebarBtn.textContent = '◀';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            handleResizeAdaptation();
+            map.invalidateSize();
+        });
+
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+        }
+
+        // --- НАЛАШТУВАННЯ КАРТИ LEAFLET ---
         const extendedBounds = L.latLngBounds([40.0, 20.0], [55.0, 55.0]);
 
         const map = L.map('map', {
             center: [48.3794, 31.1656], 
-            zoom: 6,                     
+            zoom: window.innerWidth <= 768 ? 5 : 6,                    
             minZoom: 4,                  
             maxBounds: extendedBounds,    
-            maxBoundsViscosity: 1.0      
+            maxBoundsViscosity: 1.0,
+            zoomSnap: 0.5
         });
 
-        // Використовуємо підкладку з чіткими кордонами та українськими топонімами
+        // Використовуємо CartoDB Voyager з пріоритетом для українських топонімів
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             maxZoom: 18,
             subdomains: 'abcd',
@@ -274,208 +459,23 @@
             })
             .catch(err => console.error("Помилка GeoJSON:", err));
 
-        // 2. ДОДАНО: Завантаження та неонове підсвічування державного кордону України
+        // 2. Підсвічування кордону України
         fetch('https://raw.githubusercontent.com/johan/world-geojson/master/countries/UKR.geo.json')
             .then(response => response.json())
             .then(borderData => {
                 L.geoJSON(borderData, {
                     className: 'ukraine-border-glow',
                     style: {
-                        color: '#00f0ff',     // Яскравий неоново-блакитний колір
-                        weight: 3,            // Товщина лінії
-                        fill: false,          // Без заливки в середині
+                        color: '#00f0ff',
+                        weight: 3,
+                        fill: false,
                         opacity: 0.95
                     }
                 }).addTo(map);
             })
             .catch(err => console.error("Помилка GeoJSON кордону:", err));
 
-        // Траєкторія
-        const flightPath = [
-            [44.50, 50.20],
-            [48.70, 44.50],
-            [47.23, 39.70],
-            [48.50, 37.00],
-            [50.45, 30.52]
-        ];
-
-        let flightPolyline = null;
-        let missileMarker = null;
-        let launchPointMarker = null;
-        let targetPointMarker = null;
-        let animationFrameId = null;
-
-        const slider = document.getElementById('flight-slider');
-        const launchBtn = document.getElementById('launch-btn');
-
-        function getPointAlongPath(path, t) {
-            if (t <= 0) return { point: path[0], angle: 0 };
-            if (t >= 1) return { point: path[path.length - 1], angle: 0 };
-
-            let totalDist = 0;
-            const distances = [];
-            for (let i = 0; i < path.length - 1; i++) {
-                const d = Math.hypot(path[i+1][0] - path[i][0], path[i+1][1] - path[i][1]);
-                distances.push(d);
-                totalDist += d;
-            }
-
-            let targetDist = t * totalDist;
-            let accumulated = 0;
-
-            for (let i = 0; i < distances.length; i++) {
-                if (accumulated + distances[i] >= targetDist) {
-                    const segmentT = (targetDist - accumulated) / distances[i];
-                    const p1 = path[i], p2 = path[i+1];
-                    const lat = p1[0] + (p2[0] - p1[0]) * segmentT;
-                    const lng = p1[1] + (p2[1] - p1[1]) * segmentT;
-                    
-                    const dy = p2[0] - p1[0];
-                    const dx = (p2[1] - p1[1]) * Math.cos(p1[0] * Math.PI / 180);
-                    const angle = Math.atan2(dx, dy) * 180 / Math.PI;
-
-                    return { point: [lat, lng], angle: angle };
-                }
-                accumulated += distances[i];
-            }
-            return { point: path[path.length - 1], angle: 0 };
-        }
-
-        function updateMissilePosition(percent) {
-            const t = percent / 100;
-            const { point, angle } = getPointAlongPath(flightPath, t);
-
-            if (missileMarker) {
-                missileMarker.setLatLng(point);
-                const iconElement = missileMarker.getElement();
-                if (iconElement) {
-                    const inner = iconElement.querySelector('.missile-icon');
-                    if (inner) {
-                        inner.style.transform = `rotate(${angle}deg)`;
-                    }
-                }
-            }
-
-            // Малюємо пройдену лінію
-            const currentSubPath = [flightPath[0]];
-            let totalDist = 0;
-            const distances = [];
-            for (let i = 0; i < flightPath.length - 1; i++) {
-                const d = Math.hypot(flightPath[i+1][0] - flightPath[i][0], flightPath[i+1][1] - flightPath[i][1]);
-                distances.push(d);
-                totalDist += d;
-            }
-
-            let targetDist = t * totalDist;
-            let accumulated = 0;
-
-            for (let i = 0; i < distances.length; i++) {
-                if (accumulated + distances[i] <= targetDist) {
-                    currentSubPath.push(flightPath[i+1]);
-                    accumulated += distances[i];
-                } else {
-                    currentSubPath.push(point);
-                    break;
-                }
-            }
-
-            if (flightPolyline) {
-                flightPolyline.setLatLngs(currentSubPath);
-            }
-
-            map.panTo(point, { animate: false });
-        }
-
-        function animateFlight(durationMs) {
-            let startTime = null;
-
-            function step(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min((elapsed / durationMs) * 100, 100);
-
-                slider.value = progress;
-                updateMissilePosition(progress);
-
-                if (progress < 100) {
-                    animationFrameId = requestAnimationFrame(step);
-                }
-            }
-
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            animationFrameId = requestAnimationFrame(step);
-        }
-
-        launchBtn.addEventListener('click', () => {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-            if (flightPolyline) map.removeLayer(flightPolyline);
-            if (missileMarker) map.removeLayer(missileMarker);
-            if (launchPointMarker) map.removeLayer(launchPointMarker);
-            if (targetPointMarker) map.removeLayer(targetPointMarker);
-
-            launchPointMarker = L.marker(flightPath[0]).addTo(map)
-                .bindPopup("<b>Пусковий рубіж Ту-95МС</b><br>Каспійське море");
-
-            targetPointMarker = L.marker(flightPath[flightPath.length - 1]).addTo(map)
-                .bindPopup("<b>Визначена ціль</b><br>м. Київ");
-
-            flightPolyline = L.polyline([flightPath[0]], {
-                color: '#ef4444',
-                weight: 3,
-                dashArray: '6, 6'
-            }).addTo(map);
-
-            // SVG-іконка сірої крилатої ракети Х-101
-            const svgIconHtml = `
-                <div class="missile-icon">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Полум'я з сопла -->
-                        <path d="M 50 82 Q 46 92 50 98 Q 54 92 50 82" fill="#ff4500" />
-                        <path d="M 50 82 Q 48 88 50 93 Q 52 88 50 82" fill="#ffcc00" />
-                        
-                        <!-- Стабілізатори / Хвіст -->
-                        <path d="M 42 75 L 32 84 L 42 80 Z" fill="#4a5568" />
-                        <path d="M 58 75 L 68 84 L 58 80 Z" fill="#4a5568" />
-                        
-                        <!-- Основне крило (розкладне) -->
-                        <path d="M 50 48 L 15 62 L 48 42 Z" fill="#64748b" />
-                        <path d="M 50 48 L 85 62 L 52 42 Z" fill="#64748b" />
-
-                        <!-- Корпус ракети -->
-                        <path d="M 45 30 Q 50 8 50 8 Q 50 8 55 30 L 55 78 L 45 78 Z" fill="#94a3b8" />
-
-                        <!-- Темний носовий обтікач та деталі -->
-                        <path d="M 46 25 Q 50 8 50 8 Q 50 8 54 25 Z" fill="#334155" />
-                        <rect x="46" y="40" width="8" height="2" fill="#475569" />
-                        <rect x="46" y="65" width="8" height="3" fill="#334155" />
-                    </svg>
-                </div>
-            `;
-
-            const missileIcon = L.divIcon({
-                className: 'custom-missile-container',
-                html: svgIconHtml,
-                iconSize: [36, 36],
-                iconAnchor: [18, 18]
-            });
-
-            missileMarker = L.marker(flightPath[0], { icon: missileIcon }).addTo(map);
-
-            slider.value = 0;
-            slider.disabled = false;
-            
-            map.setView(flightPath[0], 6);
-            
-            animateFlight(10000); 
-        });
-
-        slider.addEventListener('input', (e) => {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            updateMissilePosition(Number(e.target.value));
-        });
-
-        // --- ЛОГІКА WEBSOCKET ДЛЯ ОТРИМАННЯ СИГНАЛІВ ПРО БАЛІСТИКУ ---
+        // --- WEBSOCKET ДЛЯ БАЛІСТИКИ ---
         let ballisticMarker = null;
 
         function initWebSocket() {
@@ -531,31 +531,52 @@
 
         initWebSocket();
 
-        // --- ДОДАНИЙ МОДУЛЬ: ОФІЦІЙНА ІНТЕГРАЦІЯ NEPTUN REALTIME SDK ---
+        // --- МОДУЛЬ NEPTUN REALTIME SDK ---
         const activeNeptunTargets = new Map();
-        let rawNeptunThreats = [];
 
+        // Функція визначення SVG-іконки та анімації під кожен тип озброєння
         function getTargetSvg(type) {
             const t = String(type || '').toLowerCase();
 
-            // 1. Ударні БПЛА (Шахед / Герань / Kamikaze)
-            if (t.includes('shahed') || t.includes('geran') || t.includes('шахед') || t.includes('герань') || t.includes('kamikaze') || t.includes('strike')) {
+            if (t.includes('kab') || t.includes('bomb') || t.includes('каб') || t.includes('fab') || t.includes('фаб')) {
+                return `
+                    <div class="anim-kab">
+                        <svg viewBox="0 0 100 100">
+                            <path d="M 50 10 Q 60 40 58 80 L 42 80 Q 40 40 50 10 Z" fill="#f97316"/>
+                            <path d="M 50 35 L 15 55 L 20 65 L 48 45 Z" fill="#ea580c"/>
+                            <path d="M 50 35 L 85 55 L 80 65 L 52 45 Z" fill="#ea580c"/>
+                            <path d="M 40 75 L 25 90 L 40 85 Z" fill="#c2410c"/>
+                            <path d="M 60 75 L 75 90 L 60 85 Z" fill="#c2410c"/>
+                        </svg>
+                    </div>
+                `;
+            }
+            else if (t.includes('banderol') || t.includes('бандероль') || t.includes('molniya') || t.includes('молнія')) {
+                return `
+                    <div class="anim-banderol">
+                        <svg viewBox="0 0 100 100">
+                            <path d="M 50 15 L 55 80 L 45 80 Z" fill="#10b981"/>
+                            <path d="M 50 30 L 10 50 L 15 60 L 48 40 Z" fill="#059669"/>
+                            <path d="M 50 30 L 90 50 L 85 60 L 52 40 Z" fill="#059669"/>
+                            <circle cx="50" cy="15" r="5" fill="#a7f3d0"/>
+                        </svg>
+                    </div>
+                `;
+            }
+            else if (t.includes('shahed') || t.includes('geran') || t.includes('шахед') || t.includes('герань') || t.includes('kamikaze')) {
                 return `
                     <div class="anim-shahed">
                         <svg viewBox="0 0 100 100">
-                            <!-- Трикутне крило Шахеда -->
                             <path d="M 50 10 L 90 85 L 50 72 L 10 85 Z" fill="#eab308" stroke="#ca8a04" stroke-width="3"/>
                             <path d="M 50 30 L 70 80 L 50 70 L 30 80 Z" fill="#ef4444"/>
                         </svg>
                     </div>
                 `;
             } 
-            // 2. Розвідувальні БПЛА (Орлан, Зала, Суперкам тощо)
             else if (t.includes('recon') || t.includes('розвід') || t.includes('orlan') || t.includes('zala') || t.includes('supercam') || t.includes('scout')) {
                 return `
                     <div class="anim-recon">
                         <svg viewBox="0 0 100 100">
-                            <!-- Скануючий дрон-квадрокоптер / радар -->
                             <circle cx="50" cy="50" r="38" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6,4"/>
                             <path d="M 50 15 L 85 50 L 50 85 L 15 50 Z" fill="#0284c7"/>
                             <circle cx="50" cy="50" r="10" fill="#38bdf8"/>
@@ -563,12 +584,10 @@
                     </div>
                 `;
             } 
-            // 3. FPV-дрони
             else if (t.includes('fpv')) {
                 return `
                     <div class="anim-fpv">
                         <svg viewBox="0 0 100 100">
-                            <!-- Х-подібна рама FPV-коптера -->
                             <path d="M 20 20 L 80 80 M 80 20 L 20 80" stroke="#d946ef" stroke-width="8" stroke-linecap="round"/>
                             <circle cx="20" cy="20" r="10" fill="#a855f7"/>
                             <circle cx="80" cy="20" r="10" fill="#a855f7"/>
@@ -579,82 +598,203 @@
                     </div>
                 `;
             } 
-            // 4. КАБ / Авіабомби
-            else if (t.includes('kab') || t.includes('bomb') || t.includes('каб') || t.includes('fab')) {
-                return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#f97316"/></svg>`;
-            } 
-            // 5. Крилаті / Інші ракети за замовчуванням
             else {
-                return `<svg viewBox="0 0 100 100"><path d="M 50 10 L 65 90 L 50 80 L 35 90 Z" fill="#ef4444"/></svg>`;
+                return `
+                    <svg viewBox="0 0 100 100">
+                        <path d="M 50 10 L 65 90 L 50 80 L 35 90 Z" fill="#ef4444"/>
+                    </svg>
+                `;
             }
         }
 
-        // 1. Підключення WebSocket через SDK
-        if (typeof NEPTUN !== 'undefined' && NEPTUN.RealtimeClient) {
-            const client = new NEPTUN.RealtimeClient("https://neptun.in.ua");
+        // Рендеринг списку цілей у бічній шторці
+        function renderTargetsList() {
+            const container = document.getElementById('targets-list-container');
+            if (activeNeptunTargets.size === 0) {
+                container.innerHTML = `<div style="color: #64748b; text-align: center; margin-top: 20px; font-size: 13px;">Наразі немає активних цілей</div>`;
+                return;
+            }
 
-            client.subscribe((snap) => {
-                if (snap && snap.threats) {
-                    rawNeptunThreats = snap.threats;
-                    
-                    // Видаляємо цілі, що зникли
-                    const currentIds = new Set(rawNeptunThreats.map(t => t.id || t.uuid));
-                    activeNeptunTargets.forEach((marker, id) => {
-                        if (!currentIds.has(id)) {
-                            map.removeLayer(marker);
-                            activeNeptunTargets.delete(id);
+            let html = '';
+            activeNeptunTargets.forEach((targetObj, id) => {
+                const t = targetObj.rawData;
+                const type = (t.type || 'ЦІЛЬ').toUpperCase();
+                const timeStr = targetObj.createdAt;
+                const course = Math.round(t.heading || t.course || t.bearing || targetObj.heading || 0);
+
+                html += `
+                    <div class="target-card">
+                        <div class="target-info">
+                            <span class="target-type">${type}</span>
+                            <span class="target-meta">Курс: ${course}° | ID: ${String(id).slice(0,8)}</span>
+                        </div>
+                        <span class="target-time">${timeStr}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Плавна анімація руху за вектором напрямку
+        function animateTargetsVectorStep() {
+            const now = Date.now();
+
+            activeNeptunTargets.forEach((target) => {
+                let newLat = null;
+                let newLng = null;
+                let heading = Number(target.rawData.heading || target.rawData.course || target.rawData.bearing || 0);
+                
+                let speedKmH = Number(target.rawData.speed || 180); 
+                if (speedKmH < 50 && speedKmH > 0) speedKmH = speedKmH * 3.6; // Переведення м/с в км/год при потребі
+
+                // 1. Спроба використати вбудований калькулятор прогнозування SDK Neptun
+                if (typeof NEPTUN !== 'undefined' && typeof NEPTUN.predict === 'function') {
+                    const p = NEPTUN.predict(target.rawData, now);
+                    if (p) {
+                        newLat = p.lat || p.latitude;
+                        newLng = p.lon || p.lng || p.longitude;
+                        if (p.heading !== undefined) heading = p.heading;
+                    }
+                }
+
+                // 2. Екстраполяція руху в реальному часі від базової точки
+                if (!newLat || !newLng) {
+                    const baseLat = target.baseLat;
+                    const baseLng = target.baseLng;
+                    const startTime = target.baseTime || now;
+                    const deltaTimeSec = (now - startTime) / 1000;
+
+                    const speedKmS = speedKmH / 3600;
+                    const distKm = speedKmS * deltaTimeSec;
+
+                    // Конвертація азимута (0° = Північ) у радіани для геометрії
+                    const mathRad = (90 - heading) * (Math.PI / 180);
+
+                    newLat = baseLat + (distKm * Math.sin(mathRad)) / 111.32;
+                    newLng = baseLng + (distKm * Math.cos(mathRad)) / (111.32 * Math.cos(baseLat * Math.PI / 180));
+                }
+
+                if (newLat && newLng) {
+                    target.currentLat = newLat;
+                    target.currentLng = newLng;
+
+                    const newPos = [newLat, newLng];
+                    target.marker.setLatLng(newPos);
+
+                    // Поворот іконки за вектором руху
+                    const el = target.marker.getElement();
+                    if (el) {
+                        const wrapper = el.querySelector('.neptun-target-wrapper');
+                        if (wrapper) {
+                            wrapper.style.transform = `rotate(${heading}deg)`;
                         }
+                    }
+
+                    // Лінія вектора напрямку перед ціллю
+                    const mathRad = (90 - heading) * (Math.PI / 180);
+                    const lineLenKm = Math.max(15, (speedKmH / 60) * 10); // Вектор показує шлях на 10 хв вперед
+                    const vLat = newLat + (lineLenKm * Math.sin(mathRad)) / 111.32;
+                    const vLng = newLng + (lineLenKm * Math.cos(mathRad)) / (111.32 * Math.cos(newLat * Math.PI / 180));
+
+                    target.vectorLine.setLatLngs([newPos, [vLat, vLng]]);
+                }
+            });
+
+            requestAnimationFrame(animateTargetsVectorStep);
+        }
+
+        // Оновлення об'єктів з потоку даних SDK
+        function updateNeptunTargetsData(threats) {
+            if (!threats) return;
+
+            const receivedIds = new Set();
+            const now = Date.now();
+
+            threats.forEach((t, idx) => {
+                // Виправлено: гарантована унікальність ID цілей
+                const id = String(t.id || t.uuid || t.trk || (`trk_` + idx + `_` + (t.type || 'target')));
+                receivedIds.add(id);
+
+                const lat = Number(t.lat || t.latitude || 48.0);
+                const lng = Number(t.lon || t.lng || t.longitude || 31.0);
+                
+                // Динамічний точний час надходження даних про ціль
+                const timeString = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('uk-UA') : new Date().toLocaleTimeString('uk-UA');
+
+                if (activeNeptunTargets.has(id)) {
+                    // Оновлення початкових даних цілі для математики анімації
+                    const targetObj = activeNeptunTargets.get(id);
+                    targetObj.rawData = t;
+                    targetObj.baseLat = lat;
+                    targetObj.baseLng = lng;
+                    targetObj.baseTime = now;
+                    targetObj.createdAt = timeString;
+                } else {
+                    // Створення нової цілі на карті
+                    const initialLat = lat;
+                    const initialLng = lng;
+
+                    const svgContent = getTargetSvg(t.type);
+                    const iconHtml = `<div class="neptun-target-wrapper">${svgContent}</div>`;
+                    
+                    const customIcon = L.divIcon({
+                        className: 'neptun-target-icon',
+                        html: iconHtml,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+
+                    const marker = L.marker([initialLat, initialLng], { icon: customIcon }).addTo(map);
+                    marker.bindPopup(`<b>Ціль: ${(t.type || 'Незвідана').toUpperCase()}</b>`);
+
+                    const vectorPolyline = L.polyline([[initialLat, initialLng], [initialLat, initialLng]], {
+                        color: '#ef4444',
+                        weight: 2,
+                        dashArray: '4, 4',
+                        opacity: 0.7
+                    }).addTo(map);
+
+                    activeNeptunTargets.set(id, {
+                        marker: marker,
+                        vectorLine: vectorPolyline,
+                        rawData: t,
+                        baseLat: initialLat,
+                        baseLng: initialLng,
+                        currentLat: initialLat,
+                        currentLng: initialLng,
+                        baseTime: now,
+                        createdAt: timeString
                     });
                 }
             });
 
-            client.start();
+            // Видалення з карти цілей, які зникли з потоку
+            for (const [id, targetData] of activeNeptunTargets.entries()) {
+                if (!receivedIds.has(id)) {
+                    map.removeLayer(targetData.marker);
+                    map.removeLayer(targetData.vectorLine);
+                    activeNeptunTargets.delete(id);
+                }
+            }
+
+            renderTargetsList();
         }
 
-        // 2. Цикл плавного оновлення позицій цілей через NEPTUN.predict()
-        function updateNeptunPositions() {
-            const now = Date.now();
+        // --- ІНІЦІАЛІЗАЦІЯ NEPTUN REALTIME CLIENT ---
+        if (typeof NEPTUN !== 'undefined') {
+            const client = new NEPTUN.RealtimeClient("https://neptun.in.ua");
 
-            rawNeptunThreats.forEach(t => {
-                const id = t.id || t.uuid;
-                
-                // Прогнозуємо точні координати
-                const p = (typeof NEPTUN !== 'undefined' && NEPTUN.predict) ? NEPTUN.predict(t, now) : t;
-                const course = p.heading || p.azimuth || p.course || 0;
-                const type = t.type || t.target_type || 'missile';
-
-                if (p && p.lat && p.lon) {
-                    if (activeNeptunTargets.has(id)) {
-                        const marker = activeNeptunTargets.get(id);
-                        marker.setLatLng([p.lat, p.lon]);
-
-                        const el = marker.getElement();
-                        if (el) {
-                            const inner = el.querySelector('.neptun-target-wrapper');
-                            if (inner) inner.style.transform = `rotate(${course}deg)`;
-                        }
-                    } else {
-                        const iconHtml = `<div class="neptun-target-wrapper" style="transform: rotate(${course}deg);">${getTargetSvg(type)}</div>`;
-                        const icon = L.divIcon({
-                            className: 'neptun-target-icon',
-                            html: iconHtml,
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16]
-                        });
-
-                        const marker = L.marker([p.lat, p.lon], { icon: icon }).addTo(map);
-                        marker.bindPopup(`<b>Ціль:</b> ${String(type).toUpperCase()}<br><b>Курс:</b> ${Math.round(course)}°`);
-                        activeNeptunTargets.set(id, marker);
-                    }
+            client.subscribe((snap) => {
+                if (snap && snap.threats) {
+                    updateNeptunTargetsData(snap.threats);
                 }
             });
 
-            requestAnimationFrame(updateNeptunPositions);
+            client.start();
+            requestAnimationFrame(animateTargetsVectorStep);
+        } else {
+            console.error("Не вдалося завантажити SDK NEPTUN");
         }
-
-        // Запускаємо анімацію
-        requestAnimationFrame(updateNeptunPositions);
     </script>
-
 </body>
 </html>
