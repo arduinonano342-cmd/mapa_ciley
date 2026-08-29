@@ -28,6 +28,24 @@
             background: #0f172a;
         }
 
+        /* Виділення назв міст та написів на самій карті OpenStreetMap */
+        .leaflet-tile-pane {
+            filter: contrast(120%) brightness(95%);
+        }
+
+        /* Чіткий та помітний стиль для підписів областей */
+        .region-label {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #222 !important;
+            border-radius: 4px !important;
+            color: #000 !important;
+            font-weight: 800 !important;
+            font-size: 12px !important;
+            padding: 3px 7px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4) !important;
+            white-space: nowrap;
+        }
+
         .leaflet-popup-content-wrapper, .leaflet-popup-tip {
             background: #1e293b !important;
             color: #f8fafc !important;
@@ -117,6 +135,28 @@
             width: 100%;
             height: 100%;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
+        }
+        .neptun-target-label {
+            position: absolute;
+            top: 31px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-size: 11px;
+            line-height: 13px;
+            font-weight: 900;
+            font-family: Arial, sans-serif;
+            white-space: nowrap;
+            text-align: center;
+            letter-spacing: 0.2px;
+            text-shadow:
+                -1px -1px 0 #000,
+                 1px -1px 0 #000,
+                -1px  1px 0 #000,
+                 1px  1px 0 #000,
+                 0 0 4px #000,
+                 0 0 7px #000;
+            pointer-events: none;
         }
 
         .neptun-target-ring {
@@ -516,20 +556,20 @@
             maxBoundsViscosity: 1.0      
         });
 
-        // Дві підкладки карти: світла (Voyager) та темна (Dark Matter)
-        const lightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            maxZoom: 18,
-            subdomains: 'abcd',
-            attribution: '© OpenStreetMap © CARTO'
+        // Підкладка OpenStreetMap
+        const lightLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
         });
 
-        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 18,
-            subdomains: 'abcd',
-            attribution: '© OpenStreetMap © CARTO'
+        // Залишаємо змінні шарів для сумісності з існуючим перемикачем теми.
+        // Обидві теми використовують одну підкладку OpenStreetMap.
+        const darkLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
         });
 
-        darkLayer.addTo(map); // за замовчуванням темна карта
+        darkLayer.addTo(map);
 
         let currentMapTheme = 'dark';
 
@@ -554,6 +594,43 @@
 
         document.getElementById('theme-dark-btn').addEventListener('click', () => setMapTheme('dark'));
         document.getElementById('theme-light-btn').addEventListener('click', () => setMapTheme('light'));
+
+        // Стиль меж областей з твоєї карти
+        function regionStyle(feature) {
+            return {
+                fillOpacity: 0,
+                weight: 1.5,
+                opacity: 0.7,
+                color: '#444444'
+            };
+        }
+
+        // Підписи назв областей з твоєї карти
+        function onEachRegion(feature, layer) {
+            const props = feature.properties || {};
+            const regionName = props.name_uk || props.name || props.NAME_1 || props.ADMIN;
+
+            if (regionName) {
+                layer.bindTooltip(regionName, {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'region-label'
+                });
+
+                layer.bindPopup('<b>' + regionName + '</b>');
+            }
+        }
+
+        // Завантаження геоданих областей з твоєї карти
+        fetch('https://raw.githubusercontent.com/slawomirmatuszak/ukrainian_geodata/main/regiony.geojson')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: regionStyle,
+                    onEachFeature: onEachRegion
+                }).addTo(map);
+            })
+            .catch(error => console.error('Помилка завантаження GeoJSON:', error));
 
         // --- ПОШУК МІСТА/СЕЛА ---
         let searchMarker = null;
@@ -617,42 +694,6 @@
             const strProps = JSON.stringify(properties).toLowerCase();
             return alertKeys.some(key => strProps.includes(key));
         }
-
-        // 1. Завантаження GeoJSON областей
-        fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/ukraine.geojson')
-            .then(response => response.json())
-            .then(data => {
-                L.geoJSON(data, {
-                    style: function(feature) {
-                        if (isAlert(feature.properties)) {
-                            return {
-                                color: '#ff4d4d',
-                                weight: 2,
-                                fillColor: '#ff4d4d',
-                                fillOpacity: 0.55
-                            };
-                        } else {
-                            return {
-                                color: '#475569',
-                                weight: 1.5,
-                                fillColor: '#10b981',
-                                fillOpacity: 0.2
-                            };
-                        }
-                    },
-                    onEachFeature: function(feature, layer) {
-                        const props = feature.properties || {};
-                        const name = props.name || props.NAME_1 || "Область";
-                        const hasAlert = isAlert(props);
-                        
-                        layer.bindPopup(
-                            `<b>${name}</b><br>` + 
-                            (hasAlert ? "<span style='color:#ff6b6b; font-weight:bold;'>⚠️ Повітряна тривога!</span>" : "<span style='color:#34d399;'>🟢 Тривоги немає</span>")
-                        );
-                    }
-                }).addTo(map);
-            })
-            .catch(err => console.error("Помилка GeoJSON:", err));
 
         // 2. ДОДАНО: Завантаження та неонове підсвічування державного кордону України
         fetch('https://raw.githubusercontent.com/johan/world-geojson/master/countries/UKR.geo.json')
@@ -728,6 +769,28 @@
 
         // --- ДОДАНИЙ МОДУЛЬ: ОФІЦІЙНА ІНТЕГРАЦІЯ NEPTUN REALTIME SDK ---
         const activeNeptunTargets = new Map();
+        const targetCourseVectors = new Map();
+
+        function updateTargetCourseVector(id, lat, lon, course) {
+            // Вектор показує напрямок руху цілі за її курсом.
+            const vectorLengthKm = 18;
+            const lat2 = lat + (vectorLengthKm * Math.cos(course * Math.PI / 180)) / 111.32;
+            const lon2 = lon + (vectorLengthKm * Math.sin(course * Math.PI / 180)) / (111.32 * Math.cos(lat * Math.PI / 180));
+            const points = [[lat, lon], [lat2, lon2]];
+
+            let line = targetCourseVectors.get(id);
+            if (!line) {
+                line = L.polyline(points, {
+                    color: '#ff3b30',
+                    weight: 3,
+                    opacity: 0.9,
+                    dashArray: '8,6'
+                }).addTo(map);
+                targetCourseVectors.set(id, line);
+            } else {
+                line.setLatLngs(points);
+            }
+        }
         let rawNeptunThreats = [];
 
         // Останній підтверджений стан кожної цілі — потрібен для розрахунку руху за курсом,
@@ -823,6 +886,15 @@
                     activeNeptunTargets.forEach((marker, id) => {
                         if (!currentIds.has(id)) {
                             map.removeLayer(marker);
+
+                            // Разом із ціллю прибираємо її вектор напрямку,
+                            // щоб після зникнення цілі не залишався слід на карті.
+                            const vector = targetCourseVectors.get(id);
+                            if (vector) {
+                                map.removeLayer(vector);
+                                targetCourseVectors.delete(id);
+                            }
+
                             activeNeptunTargets.delete(id);
                             lastKnownState.delete(id);
                             targetInfo.delete(id);
@@ -874,14 +946,37 @@
 
                 if (p && p.lat && p.lon) {
                     const normalizedType = String(type).toLowerCase();
-                    let displayType = String(type).toUpperCase();
+                    let displayType = 'ІНША ЦІЛЬ';
                     let icon = '✈️';
+
+                    // Українські назви типів цілей
                     if (normalizedType.includes('shahed') || normalizedType.includes('geran') || normalizedType.includes('шахед') || normalizedType.includes('герань') || normalizedType.includes('kamikaze') || normalizedType.includes('strike')) {
                         displayType = 'ШАХЕД';
                         icon = '🛩️';
                     } else if (normalizedType.includes('fpv')) {
-                        displayType = 'FPV';
+                        displayType = 'FPV-ДРОН';
                         icon = '🚁';
+                    } else if (normalizedType.includes('recon') || normalizedType.includes('розвід') || normalizedType.includes('orlan') || normalizedType.includes('zala') || normalizedType.includes('supercam') || normalizedType.includes('scout')) {
+                        displayType = 'РОЗВІДУВАЛЬНИЙ БПЛА';
+                        icon = '🛰️';
+                    } else if (normalizedType.includes('kab') || normalizedType.includes('fab') || normalizedType.includes('bomb') || normalizedType.includes('каб')) {
+                        displayType = 'КАБ';
+                        icon = '💣';
+                    } else if (normalizedType.includes('ballistic') || normalizedType.includes('баліст')) {
+                        displayType = 'БАЛІСТИЧНА РАКЕТА';
+                        icon = '🚀';
+                    } else if (normalizedType.includes('cruise') || normalizedType.includes('крилат')) {
+                        displayType = 'КРИЛАТА РАКЕТА';
+                        icon = '🚀';
+                    } else if (normalizedType.includes('missile') || normalizedType.includes('rocket') || normalizedType.includes('ракета')) {
+                        displayType = 'РАКЕТА';
+                        icon = '🚀';
+                    } else if (normalizedType.includes('uav') || normalizedType.includes('drone') || normalizedType.includes('бпла') || normalizedType.includes('дрон')) {
+                        displayType = 'БПЛА';
+                        icon = '🛩️';
+                    } else if (normalizedType.includes('aircraft') || normalizedType.includes('літак')) {
+                        displayType = 'ЛІТАК';
+                        icon = '✈️';
                     }
 
                     const speedText = `${realSpeedKmh === null ? '~' : ''}${Math.round(state.speedKmh)} км/год`;
@@ -891,6 +986,7 @@
                     if (activeNeptunTargets.has(id)) {
                         const marker = activeNeptunTargets.get(id);
                         marker.setLatLng([p.lat, p.lon]);
+                        updateTargetCourseVector(id, p.lat, p.lon, course);
 
                         const el = marker.getElement();
                         if (el) {
@@ -902,7 +998,7 @@
                             marker.setPopupContent(`<b>Ціль:</b> ${displayType}<br><b>Курс:</b> ${Math.round(course)}°<br><b>Швидкість:</b> ${speedText}`);
                         }
                     } else {
-                        const iconHtml = `<div class="neptun-target-wrapper" style="transform: rotate(${course}deg);"><div class="neptun-target-ring"></div>${getTargetSvg(type)}<span style="position:absolute;top:30px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:bold;color:#fff;text-shadow:0 1px 3px #000;white-space:nowrap;">${displayType}</span></div>`;
+                        const iconHtml = `<div class="neptun-target-wrapper" style="transform: rotate(${course}deg);"><div class="neptun-target-ring"></div>${getTargetSvg(type)}<span class="neptun-target-label">${displayType}</span></div>`;
                         const markerIcon = L.divIcon({
                             className: 'neptun-target-icon',
                             html: iconHtml,
@@ -911,6 +1007,7 @@
                         });
 
                         const marker = L.marker([p.lat, p.lon], { icon: markerIcon }).addTo(map);
+                        updateTargetCourseVector(id, p.lat, p.lon, course);
                         marker.bindPopup(`<b>Ціль:</b> ${displayType}<br><b>Курс:</b> ${Math.round(course)}°<br><b>Швидкість:</b> ${speedText}`);
                         activeNeptunTargets.set(id, marker);
                         updateTargetsCounter();
