@@ -57,7 +57,6 @@
             line-height: 1.5;
         }
 
-        /* */
         /* --- СТИЛІ ДЛЯ БЛИМАЮЧОЇ ТОЧКИ БАЛІСТИКИ --- */
         .custom-ballistic-marker {
             background: transparent !important;
@@ -206,7 +205,6 @@
             animation: cruise-ring-glow 0.8s infinite alternate;
         }
 
-        /* */
         /* --- БІЧНА ПАНЕЛЬ (МОБІЛЬНА ВЕРСІЯ — ШТОРКА ЗНИЗУ) --- */
         #sidebar-backdrop {
             position: fixed;
@@ -508,7 +506,6 @@
             padding: 10px 0;
         }
 
-        /* */
         /* --- ОКРЕМІ АНІМАЦІЇ ДЛЯ КОЖНОГО ТИПУ ЦІЛІ --- */
         .neptun-target-icon,
         .custom-ballistic-marker {
@@ -544,14 +541,6 @@
         @keyframes shahed-fly {
             0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px #facc15); }
             50% { transform: translateY(-2px); filter: drop-shadow(0 0 8px #ef4444); }
-        }
-        .shahed-prop {
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: spin-fast 0.12s linear infinite;
-        }
-        .shahed-engine {
-            animation: engine-glow 0.35s ease-in-out infinite alternate;
         }
 
         .recon-sweep {
@@ -594,11 +583,6 @@
             0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 3px #38bdf8); }
             50% { transform: translateY(-2px); filter: drop-shadow(0 0 8px #7dd3fc); }
         }
-        .uav-prop {
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: spin-fast 0.14s linear infinite;
-        }
 
         .anim-kab {
             animation: kab-glide 0.85s ease-in-out infinite;
@@ -612,10 +596,10 @@
         }
         @keyframes kab-trail {
             0% { opacity: 0.95; transform: scaleY(0.6); }
-            100% { opacity: 0.15; transform: scaleY(1.35); }
+            100% { opacity: 15; transform: scaleY(1.35); }
         }
 
-        /* --- АНІМАЦІЯ БАЛІСТИЧНОЇ РАКЕТИ (ПІКІРУВАННЯ ТА ПОТУЖНЕ ПОЛУМ'Я) --- */
+        /* --- АНІМАЦІЯ БАЛІСТИЧНОЇ РАКЕТИ --- */
         .anim-ballistic {
             animation: ballistic-dive 0.35s ease-in-out infinite alternate;
         }
@@ -672,10 +656,6 @@
         @keyframes spin-fast {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        @keyframes engine-glow {
-            0% { opacity: 0.45; }
-            100% { opacity: 1; }
         }
 
         .ballistic-ws-wrap {
@@ -756,8 +736,6 @@
             attribution: '&copy; OpenStreetMap'
         });
 
-        // Залишаємо змінні шарів для сумісності з існуючим перемикачем теми.
-        // Обидві теми використовують одну підкладку OpenStreetMap.
         const darkLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
@@ -789,7 +767,7 @@
         document.getElementById('theme-dark-btn').addEventListener('click', () => setMapTheme('dark'));
         document.getElementById('theme-light-btn').addEventListener('click', () => setMapTheme('light'));
 
-        // Стиль меж областей з твоєї карти
+        // Стиль меж областей
         function regionStyle(feature) {
             return {
                 fillOpacity: 0,
@@ -799,7 +777,7 @@
             };
         }
 
-        // Підписи назв областей з твоєї карти
+        // Підписи назв областей
         function onEachRegion(feature, layer) {
             const props = feature.properties || {};
             const regionName = props.name_uk || props.name || props.NAME_1 || props.ADMIN;
@@ -815,7 +793,7 @@
             }
         }
 
-        // Завантаження геоданих областей з твоєї карти
+        // Завантаження геоданих областей
         fetch('https://raw.githubusercontent.com/slawomirmatuszak/ukrainian_geodata/main/regiony.geojson')
             .then(response => response.json())
             .then(data => {
@@ -889,6 +867,320 @@
             return alertKeys.some(key => strProps.includes(key));
         }
 
+        // SVG модель балістичної ракети надана користувачем
+        const userBallisticSvgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="100%" height="100%" class="missile-svg">
+              <defs>
+                <linearGradient id="bodyGrad_986" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#000000"/>
+                  <stop offset="25%" stop-color="#3a4b37"/>
+                  <stop offset="50%" stop-color="#93a490"/>
+                  <stop offset="85%" stop-color="#3a4b37"/>
+                  <stop offset="100%" stop-color="#000000"/>
+                </linearGradient>
+
+                <linearGradient id="noseGrad_246" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#000000"/>
+                  <stop offset="40%" stop-color="#626b60"/>
+                  <stop offset="100%" stop-color="#000000"/>
+                </linearGradient>
+
+                <linearGradient id="flameGrad_21" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="20%" stop-color="#fef08a"/>
+                  <stop offset="55%" stop-color="#f97316"/>
+                  <stop offset="85%" stop-color="#dc2626"/>
+                  <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+                </linearGradient>
+
+                <filter id="missileShadow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="3" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.6"/>
+                </filter>
+              </defs>
+
+              <g transform="rotate(0, 100, 200)" filter="url(#missileShadow)">
+                <circle cx="100" cy="200" r="114.4" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
+                <path d="M 100,60.999999999999986 L 95,70.99999999999999 L 105,70.99999999999999 Z" fill="#4ade80" opacity="0.8"/>
+                
+                <path d="M 90.2,288.59999999999997 
+                         Q 88.8,333.59999999999997 100,363.59999999999997 
+                         Q 111.2,333.59999999999997 109.8,288.59999999999997 Z" 
+                      fill="url(#flameGrad_21)" />
+                <path d="M 95.1,288.59999999999997 
+                         Q 100,323.59999999999997 100,333.59999999999997 
+                         Q 100,323.59999999999997 104.9,288.59999999999997 Z" 
+                      fill="#ffffff" opacity="0.9"/>
+                
+                <path d="M 86,242.59999999999997 
+                         L 62,282.59999999999997 
+                         L 66,288.59999999999997 
+                         L 86,282.59999999999997 Z" 
+                      fill="#1c241b" stroke="#000000" stroke-width="1"/>
+
+                <path d="M 114,242.59999999999997 
+                         L 138,282.59999999999997 
+                         L 134,288.59999999999997 
+                         L 114,282.59999999999997 Z" 
+                      fill="#1c241b" stroke="#000000" stroke-width="1"/>
+
+                <path d="M 98,232.59999999999997 L 98,286.59999999999997 L 102,286.59999999999997 L 102,232.59999999999997 Z" 
+                      fill="#697168" opacity="0.7"/>
+
+                <path d="M 86,157.39999999999998 
+                         L 78,182.39999999999998 
+                         L 86,192.39999999999998 Z" 
+                      fill="#1c241b"/>
+
+                <path d="M 114,157.39999999999998 
+                         L 122,182.39999999999998 
+                         L 114,192.39999999999998 Z" 
+                      fill="#1c241b"/>
+                
+                <rect x="86" y="127.39999999999998" width="28" height="145.2" 
+                      rx="1" ry="1"
+                      fill="url(#bodyGrad_986)" 
+                      stroke="#000000" stroke-width="1"/>
+
+                <path d="M 86,127.39999999999998 
+                         Q 88.1,98.35999999999999 100,78.99999999999999 
+                         Q 111.9,98.35999999999999 114,127.39999999999998 Z" 
+                      fill="url(#noseGrad_246)" 
+                      stroke="#000000" stroke-width="1"/>
+
+                <path d="M 98,90.99999999999999 Q 100,78.99999999999999 102,90.99999999999999 Z" fill="#4ade80"/>
+
+                <line x1="86" y1="127.39999999999998" x2="114" y2="127.39999999999998" stroke="#000000" stroke-width="2"/>
+                <line x1="86" y1="129.39999999999998" x2="114" y2="129.39999999999998" stroke="#4ade80" stroke-width="1" opacity="0.8"/>
+
+                <line x1="86" y1="252.59999999999997" x2="114" y2="252.59999999999997" stroke="#000000" stroke-width="1.5"/>
+                <line x1="86" y1="212.59999999999997" x2="114" y2="212.59999999999997" stroke="#000000" stroke-width="1.5"/>
+
+                <path d="M 89.5,272.59999999999997 
+                         L 91.6,288.59999999999997 
+                         L 108.4,288.59999999999997 
+                         L 110.5,272.59999999999997 Z" 
+                      fill="#111827" stroke="#374151" stroke-width="1"/>
+
+                <circle cx="100" cy="200" r="2" fill="#4ade80" opacity="0.9"/>
+              </g>
+            </svg>
+        `;
+
+        // SVG модель Шахеда/БПЛА надана користувачем
+        const userShahedSvgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="100%" height="100%">
+              <g>
+                <!-- Тінь -->
+                <path d="M70,12 L125,95 L125,108 L81,108 L81,113 L59,113 L59,108 L15,108 L15,95 Z" fill="rgba(0,0,0,0.4)" transform="translate(3,4)" />
+                <!-- Фюзеляж / Дельтовидне крило -->
+                <path d="M70,12 L125,95 L125,108 L81,108 L81,113 L59,113 L59,108 L15,108 L15,95 Z" fill="#334155" stroke="#1e293b" stroke-width="2.5" />
+                <!-- Килі -->
+                <rect x="14" y="85" width="4" height="24" fill="#1e293b" />
+                <rect x="122" y="85" width="4" height="24" fill="#1e293b" />
+                <!-- Осьова лінія -->
+                <line x1="70" y1="18" x2="70" y2="108" stroke="#64748b" stroke-width="2" />
+                <!-- Бойова частина -->
+                <circle cx="70" cy="16" r="4" fill="#ef4444" />
+                <!-- Гвинт -->
+                <rect x="52" y="112" width="36" height="4" fill="#eab308" />
+                <circle cx="70" cy="114" r="3" fill="#1e293b" />
+              </g>
+            </svg>
+        `;
+
+        // SVG модель розвідувального БПЛА (збільшено розмір відображення шляхом точного ViewBox маштабування)
+        const userReconSvgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="55 60 90 80" width="100%" height="100%">
+              <defs>
+                <radialGradient id="fov-glow-orlan10" cx="50%" cy="0%" r="100%">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.45" />
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                </radialGradient>
+                <filter id="shadow-orlan10" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.8"/>
+                </filter>
+              </defs>
+              <g transform="rotate(88, 100, 100)" filter="url(#shadow-orlan10)">
+                <g id="drone-body">
+                  <path d="M 67.5 92 L 132.5 92 L 132.5 110 L 67.5 110 Z" fill="#ef4444" stroke="#0f172a" stroke-width="2" />
+                  <path d="M 85.7 124.99 L 114.3 124.99 L 109.75 130.94 L 90.25 130.94 Z" fill="#ef4444" stroke="#0f172a" stroke-width="1.5" />
+                  <path d="M 100 71.44 C 110 88.1, 108 117.85, 103 128.56 L 97 128.56 C 92 117.85, 90 88.1, 100 71.44 Z" fill="#0f172a" stroke="#f87171" stroke-width="2" />
+                  <ellipse cx="100" cy="71.44" rx="14" ry="3" fill="#f59e0b" />
+                  <circle cx="100" cy="71.44" r="3" fill="#ffffff" />
+                  <circle cx="100" cy="100" r="5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5" />
+                </g>
+                <circle cx="100" cy="100" r="3" fill="#ffffff" stroke="#000000" stroke-width="1" />
+              </g>
+            </svg>
+        `;
+
+        // SVG модель крилатої ракети надана користувачем
+        const userCruiseSvgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" width="100%" height="100%" class="drop-shadow-2xl">
+                <defs>
+                    <!-- Fuselage Volumetric Metallic Shading Gradient -->
+                    <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#94a3b8" />
+                        <stop offset="25%" stop-color="#64748b" />
+                        <stop offset="70%" stop-color="#475569" />
+                        <stop offset="100%" stop-color="#1e293b" />
+                    </linearGradient>
+
+                    <!-- Wing Surface Gradient -->
+                    <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#94a3b8" />
+                        <stop offset="50%" stop-color="#475569" />
+                        <stop offset="100%" stop-color="#1e293b" />
+                    </linearGradient>
+
+                    <!-- Engine Metallic Heat Gradient -->
+                    <linearGradient id="engineMetalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#0f172a" />
+                        <stop offset="40%" stop-color="#475569" />
+                        <stop offset="70%" stop-color="#94a3b8" />
+                        <stop offset="100%" stop-color="#1e293b" />
+                    </linearGradient>
+
+                    <!-- Glass Glare Gradient for DSMAC Seeker Window -->
+                    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9" />
+                        <stop offset="50%" stop-color="#0284c7" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.9" />
+                    </linearGradient>
+
+                    <!-- Jet Flame Exhaust Glow -->
+                    <radialGradient id="flameCoreGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ffffff" />
+                        <stop offset="30%" stop-color="#ffcc00" />
+                        <stop offset="70%" stop-color="#ff3300" stop-opacity="0.9" />
+                        <stop offset="100%" stop-color="#ff0000" stop-opacity="0" />
+                    </radialGradient>
+
+                    <!-- Drop Shadow Filter -->
+                    <filter id="realismShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000000" flood-opacity="0.6" />
+                    </filter>
+                </defs>
+            
+                <g transform="rotate(-90, 350, 200)">
+                    <g transform="translate(130, 200)">
+                        <path d="M 0,-10 L -60,-4 L -110,0 L -60,4 L 0,10 Z" fill="url(#flameCoreGlow)" opacity="0.8" />
+                    </g>
+
+                    <g filter="url(#realismShadow)">
+                        <!-- Left & Right Main Swept Wings -->
+                        <path d="M 390,200 L 320,35 L 375,38 L 420,200 Z" fill="url(#wingGrad)" stroke="#1e293b" stroke-width="1.8" />
+                        <path d="M 390,200 L 320,365 L 375,362 L 420,200 Z" fill="url(#wingGrad)" stroke="#1e293b" stroke-width="1.8" />
+                        
+                        <!-- Aileron Lines -->
+                        <line x1="335" y1="75" x2="375" y2="76" stroke="#1e293b" stroke-width="1.2" />
+                        <line x1="335" y1="325" x2="375" y2="324" stroke="#1e293b" stroke-width="1.2" />
+                    </g>
+
+                    <!-- Tail Fins Top View -->
+                    <g filter="url(#realismShadow)">
+                        <path d="M 180,200 L 155,110 L 190,110 L 210,200 Z" fill="url(#wingGrad)" stroke="#1e293b" stroke-width="1.5" />
+                        <path d="M 180,200 L 155,290 L 190,290 L 210,200 Z" fill="url(#wingGrad)" stroke="#1e293b" stroke-width="1.5" />
+                    </g>
+
+                    <!-- Main Body Top Projection -->
+                    <g filter="url(#realismShadow)">
+                        <path d="M 610,200 C 560,178 480,180 380,180 L 170,182 C 150,182 140,190 140,200 C 140,210 150,218 170,218 L 380,220 C 480,220 560,222 610,200 Z" fill="url(#fuselageGrad)" stroke="#1e293b" stroke-width="2" />
+
+                        <!-- Nose Cap -->
+                        <path d="M 610,200 C 570,182 520,180 480,180 L 480,220 C 520,220 570,218 610,200 Z" fill="#dc2626" opacity="0.85" stroke="#1e293b" stroke-width="1.5" />
+
+                        <!-- Center Line Seam -->
+                        <line x1="170" y1="200" x2="580" y2="200" stroke="#1e293b" stroke-width="1" opacity="0.6" />
+                    </g>
+                </g>
+            </svg>
+        `;
+
+        // SVG модель КАБ надана користувачем
+        const userKabSvgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+              <defs>
+                <filter id="kab-shadow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feDropShadow dx="4" dy="7" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
+                </filter>
+
+                <!-- Metallic Cylindrical Gradient for Bomb Fuselage -->
+                <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#3a4149"/>
+                  <stop offset="25%" stop-color="#7a8591"/>
+                  <stop offset="50%" stop-color="#e2e8f0"/>
+                  <stop offset="75%" stop-color="#7a8591"/>
+                  <stop offset="100%" stop-color="#3a4149"/>
+                </linearGradient>
+
+                <!-- Realistic Glass Dome Shading -->
+                <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                  <stop offset="30%" stop-color="#38bdf8" stop-opacity="0.4"/>
+                  <stop offset="70%" stop-color="#1e3a8a" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#0f172a" stop-opacity="0.9"/>
+                </linearGradient>
+              </defs>
+
+              <g filter="url(#kab-shadow)" transform="rotate(45 60 60)">
+                <!-- Tail Fin Assembly with Red Trim Control Surfaces (Червоні рулі з малюнка) -->
+                <g class="tail-assembly">
+                  <!-- Left Main Tail Fin -->
+                  <path d="M 46 76 L 26 94 L 33 98 L 56 86 Z" fill="#4b535d" stroke="#3a4149" stroke-width="0.7"/>
+                  <!-- Left Red Rudder Surface -->
+                  <path d="M 32 89 L 26 94 L 29 96 L 35 91 Z" fill="#dc2626" stroke="#ef4444" stroke-width="0.5"/>
+
+                  <!-- Right Main Tail Fin -->
+                  <path d="M 74 76 L 94 94 L 87 98 L 64 86 Z" fill="#4b535d" stroke="#3a4149" stroke-width="0.7"/>
+                  <!-- Right Red Rudder Surface -->
+                  <path d="M 88 89 L 94 94 L 91 96 L 85 91 Z" fill="#dc2626" stroke="#ef4444" stroke-width="0.5"/>
+
+                  <!-- Top & Bottom Stabilizer Fins (Крестоподібні вертикальні стабілізатори з червоним кінцем) -->
+                  <path d="M 56 84 L 54 104 L 58 106 L 62 104 L 60 84 Z" fill="#4b535d" stroke="#3a4149" stroke-width="0.7"/>
+                  <path d="M 55 100 L 54 104 L 62 104 L 61 100 Z" fill="#dc2626"/>
+                </g>
+                
+                <!-- Front Aerodynamic Canards / Steering Controls (Передні рулі з малюнка) -->
+                <g class="front-canards">
+                  <path d="M 46 34 L 36 26 L 38 36 L 46 38 Z" fill="#4b535d" stroke="#3a4149" stroke-width="0.7"/>
+                  <path d="M 74 34 L 84 26 L 82 36 L 74 38 Z" fill="#4b535d" stroke="#3a4149" stroke-width="0.7"/>
+                </g>
+
+                <!-- Main Heavy Cylindrical Bomb Fuselage -->
+                <g class="bomb-fuselage">
+                  <path d="M 46 24 L 46 84 C 46 88, 55 90, 60 90 C 65 90, 74 88, 74 84 L 74 24 Z" 
+                        fill="url(#bodyGradient)" 
+                        stroke="#3a4149" 
+                        stroke-width="0.9"/>
+
+                  <!-- Dome Nose -->
+                  <path d="M 46 24 C 46 10, 60 7, 60 7 C 60 7, 74 10, 74 24 Z" fill="url(#bodyGradient)" stroke="#3a4149" stroke-width="0.9"/>
+                  <ellipse cx="60" cy="16" rx="8.4" ry="3" fill="none" stroke="#3a4149" stroke-width="0.7" opacity="0.4"/>
+
+                  <!-- Bright Yellow Suspension Lugs & Brackets (Жовті кріпильні вушка з малюнка) -->
+                  <g class="suspension-lugs">
+                    <!-- Front Yellow Lug -->
+                    <path d="M 57 42 L 56 37 C 56 35, 64 35, 64 37 L 63 42 Z" fill="#eab308" stroke="#ca8a04" stroke-width="0.8"/>
+                    <circle cx="60" cy="38" r="1.5" fill="#111827"/>
+                    
+                    <!-- Rear Yellow Lug -->
+                    <path d="M 57 58 L 56 53 C 56 51, 64 51, 64 53 L 63 58 Z" fill="#eab308" stroke="#ca8a04" stroke-width="0.8"/>
+                    <circle cx="60" cy="54" r="1.5" fill="#111827"/>
+                    
+                    <!-- Longitudinal Cable Conduit Along Bottom (Кабельний жолоб) -->
+                    <rect x="73" y="32" width="2" height="52" fill="#334155" stroke="#0f172a" stroke-width="0.5"/>
+                  </g>
+                  
+                  <line x1="47" y1="46" x2="73" y2="46" stroke="#3a4149" stroke-width="0.6" opacity="0.6"/>
+                  <line x1="47" y1="64" x2="73" y2="64" stroke="#3a4149" stroke-width="0.6" opacity="0.6"/>
+                  <circle cx="50" cy="50" r="0.7" fill="#1e293b"/>
+                  <circle cx="50" cy="52" r="0.7" fill="#1e293b"/>
+                </g>
+              </g>
+            </svg>
+        `;
+
         // --- ЛОГІКА WEBSOCKET ДЛЯ ОТРИМАННЯ СИГНАЛІВ ПРО БАЛІСТИКУ ---
         let ballisticMarker = null;
 
@@ -914,15 +1206,7 @@
                                     <div class="blinking-pulse"></div>
                                     <div class="ballistic-ws-missile">
                                         <div class="anim-ballistic">
-                                            <svg viewBox="0 0 100 100">
-                                                <circle class="ballistic-shock" cx="50" cy="20" r="18" fill="none" stroke="#ff0000" stroke-width="3"/>
-                                                <ellipse class="ballistic-flame" cx="50" cy="90" rx="9" ry="18" fill="#f97316"/>
-                                                <ellipse class="ballistic-flame" cx="50" cy="94" rx="4" ry="10" fill="#fde047"/>
-                                                <path d="M50 6 L64 36 L50 30 L36 36 Z" fill="#fecaca"/>
-                                                <rect x="43" y="30" width="14" height="48" rx="3" fill="#ef4444"/>
-                                                <path d="M34 72 L43 56 L43 78 Z" fill="#7f1d1d"/>
-                                                <path d="M66 72 L57 56 L57 78 Z" fill="#7f1d1d"/>
-                                            </svg>
+                                            ${userBallisticSvgContent}
                                         </div>
                                     </div>
                                 </div>
@@ -969,12 +1253,11 @@
 
         initWebSocket();
 
-        // --- ДОДАНИЙ МОДУЛЬ: ОФІЦІЙНА ІНТЕГРАЦІЯ NEPTUN REALTIME SDK ---
+        // --- ІНТЕГРАЦІЯ NEPTUN REALTIME SDK ---
         const activeNeptunTargets = new Map();
         const targetCourseVectors = new Map();
 
         function updateTargetCourseVector(id, lat, lon, course) {
-            // Вектор показує напрямок руху цілі за її курсом.
             const vectorLengthKm = 18;
             const lat2 = lat + (vectorLengthKm * Math.cos(course * Math.PI / 180)) / 111.32;
             const lon2 = lon + (vectorLengthKm * Math.sin(course * Math.PI / 180)) / (111.32 * Math.cos(lat * Math.PI / 180));
@@ -995,10 +1278,8 @@
         }
         let rawNeptunThreats = [];
 
-        // Останній підтверджений стан кожної цілі
         const lastKnownState = new Map();
 
-        // Типова швидкість цілі (км/год), якщо в даних немає поля speed
         function defaultSpeedKmh(type) {
             const t = String(type || '').toLowerCase();
             if (t.includes('shahed') || t.includes('geran') || t.includes('шахед') || t.includes('герань') || t.includes('kamikaze') || t.includes('strike')) return 170;
@@ -1033,24 +1314,17 @@
             if (t.includes('uav') || t.includes('drone') || t.includes('бпла') || t.includes('дрон')) {
                 return 'uav';
             }
-            return 'cruise'; // За замовчуванням ракета вважається крилатою
+            return 'cruise';
         }
 
         function getTargetSvg(type) {
             const category = getTargetCategory(type);
 
-            // 1. Ударні БПЛА (Шахед / Герань)
-            if (category === 'shahed') {
+            // 1. Ударні БПЛА / Шахеди / Загальні БПЛА (крім розвідників та FPV)
+            if (category === 'shahed' || category === 'uav') {
                 return `
                     <div class="anim-shahed">
-                        <svg viewBox="0 0 100 100">
-                            <ellipse class="shahed-engine" cx="50" cy="86" rx="7" ry="12" fill="#f97316"/>
-                            <ellipse class="shahed-engine" cx="50" cy="90" rx="3.5" ry="7" fill="#fde047"/>
-                            <path d="M18 58 L50 18 L82 58 L68 52 L50 72 L32 52 Z" fill="#a16207" stroke="#facc15" stroke-width="2"/>
-                            <path d="M36 48 L50 28 L64 48 L50 58 Z" fill="#eab308"/>
-                            <rect x="46" y="58" width="8" height="22" rx="2" fill="#713f12"/>
-                            <ellipse class="shahed-prop" cx="50" cy="82" rx="14" ry="3" fill="#fde68a" opacity="0.9"/>
-                        </svg>
+                        ${userShahedSvgContent}
                     </div>
                 `;
             }
@@ -1058,15 +1332,7 @@
             if (category === 'recon') {
                 return `
                     <div class="anim-recon">
-                        <svg viewBox="0 0 100 100">
-                            <circle class="recon-ping" cx="50" cy="50" r="40" fill="none" stroke="#38bdf8" stroke-width="2"/>
-                            <circle cx="50" cy="50" r="38" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4"/>
-                            <path class="recon-sweep" d="M50 50 L50 14 A36 36 0 0 1 78 32 Z" fill="rgba(56,189,248,0.35)"/>
-                            <ellipse cx="50" cy="54" rx="28" ry="10" fill="#0369a1"/>
-                            <path d="M22 54 L8 48 L8 60 Z" fill="#7dd3fc"/>
-                            <rect x="46" y="38" width="8" height="20" rx="2" fill="#e0f2fe"/>
-                            <circle cx="50" cy="50" r="6" fill="#38bdf8"/>
-                        </svg>
+                        ${userReconSvgContent}
                     </div>
                 `;
             }
@@ -1093,57 +1359,30 @@
             if (category === 'kab') {
                 return `
                     <div class="anim-kab">
-                        <svg viewBox="0 0 100 100">
-                            <ellipse class="kab-trail" cx="50" cy="86" rx="8" ry="16" fill="#fb923c"/>
-                            <path d="M50 8 L60 28 L50 24 L40 28 Z" fill="#fdba74"/>
-                            <rect x="42" y="24" width="16" height="46" rx="6" fill="#ea580c"/>
-                            <path d="M28 62 L42 48 L42 68 Z" fill="#9a3412"/>
-                            <path d="M72 62 L58 48 L58 68 Z" fill="#9a3412"/>
-                            <circle cx="50" cy="28" r="5" fill="#ffedd5"/>
-                        </svg>
+                        ${userKabSvgContent}
                     </div>
                 `;
             }
-            // 5. БАЛІСТИЧНА РАКЕТА (Вертикальна важка боєголовка, ударні хвилі, факел)
+            // 5. БАЛІСТИЧНА РАКЕТА
             if (category === 'ballistic') {
                 return `
                     <div class="anim-ballistic">
-                        <svg viewBox="0 0 100 100">
-                            <circle class="ballistic-shock" cx="50" cy="22" r="18" fill="none" stroke="#ff0000" stroke-width="3"/>
-                            <ellipse class="ballistic-flame" cx="50" cy="88" rx="9" ry="18" fill="#f97316"/>
-                            <ellipse class="ballistic-flame" cx="50" cy="94" rx="4.5" ry="11" fill="#fde047"/>
-                            <path d="M50 4 L65 36 L50 30 L35 36 Z" fill="#fecaca"/>
-                            <rect x="42" y="30" width="16" height="50" rx="3" fill="#dc2626"/>
-                            <path d="M32 74 L42 56 L42 80 Z" fill="#7f1d1d"/>
-                            <path d="M68 74 L58 56 L58 80 Z" fill="#7f1d1d"/>
-                        </svg>
+                        ${userBallisticSvgContent}
                     </div>
                 `;
             }
-            // 6. КРИЛАТА РАКЕТА (Розгорнуті крила, реактивний струмінь)
+            // 6. КРИЛАТА РАКЕТА
             if (category === 'cruise') {
                 return `
                     <div class="anim-cruise">
-                        <svg viewBox="0 0 100 100">
-                            <ellipse class="cruise-exhaust" cx="50" cy="88" rx="7" ry="14" fill="#fb7185"/>
-                            <ellipse class="cruise-exhaust" cx="50" cy="92" rx="3.5" ry="7" fill="#fde047"/>
-                            <path class="cruise-wing-pulse" d="M8 50 L50 16 L92 50 L64 46 L50 72 L36 46 Z" fill="#f43f5e"/>
-                            <rect x="44" y="26" width="12" height="48" rx="4" fill="#be123c"/>
-                            <path d="M50 6 L58 28 L50 24 L42 28 Z" fill="#ffe4e6"/>
-                            <rect x="20" y="48" width="60" height="5" rx="2.5" fill="#e11d48"/>
-                        </svg>
+                        ${userCruiseSvgContent}
                     </div>
                 `;
             }
-            // 7. Звичайні БПЛА
+            // 7. Інші БПЛА за замовчуванням
             return `
-                <div class="anim-uav">
-                    <svg viewBox="0 0 100 100">
-                        <ellipse class="uav-prop" cx="50" cy="18" rx="16" ry="3.5" fill="#bae6fd"/>
-                        <path d="M14 58 L50 40 L86 58 L70 54 L50 78 L30 54 Z" fill="#0284c7"/>
-                        <rect x="46" y="40" width="8" height="30" rx="2" fill="#e0f2fe"/>
-                        <circle cx="50" cy="48" r="5" fill="#38bdf8"/>
-                    </svg>
+                <div class="anim-shahed">
+                    ${userShahedSvgContent}
                 </div>
             `;
         }
